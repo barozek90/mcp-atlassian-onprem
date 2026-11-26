@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__atlassian__jira_search",
+      "mcp__atlassian__jira_get_issue",
+      "mcp__atlassian__jira_get_comments",
+      "mcp__atlassian__jira_read_attachment",
+      "mcp__atlassian__jira_list_transitions",
+      "mcp__atlassian__jira_find_assignable_users",
+      "mcp__atlassian__jira_get_create_fields",
+      "mcp__atlassian__confluence_search",
+      "mcp__atlassian__confluence_get_page",
+      "mcp__atlassian__confluence_get_children",
+      "mcp__atlassian__confluence_get_comments",
+      "mcp__atlassian__confluence_list_attachments"
+    ],
+    "ask": [
+      "mcp__atlassian__jira_create_issue",
+      "mcp__atlassian__jira_add_comment",
+      "mcp__atlassian__jira_transition_issue",
+      "mcp__atlassian__jira_assign_issue",
+      "mcp__atlassian__jira_assign_to_me",
+      "mcp__atlassian__confluence_create_page",
+      "mcp__atlassian__confluence_update_page"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.token
+
+# Local tool settings
+.claude/
+.mcp.json
+.idea/
+.vscode/

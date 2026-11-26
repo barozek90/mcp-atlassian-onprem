@@ -1,0 +1,28 @@
+default:
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+
+cache:
+  key:
+    files:
+      - uv.lock
+  paths:
+    - .uv-cache
+
+stages:
+  - test
+
+lint:
+  stage: test
+  script:
+    - uv sync --locked
+    - uv run ruff check src tests
+    - uv run ruff format --check src tests
+
+test:
+  stage: test
+  script:
+    - uv sync --locked
+    - uv run pytest -q
