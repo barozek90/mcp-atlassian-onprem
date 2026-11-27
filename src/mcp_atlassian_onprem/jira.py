@@ -32,6 +32,16 @@ def _person(value: dict | None) -> dict | None:
     return {"username": value.get("name"), "display_name": value.get("displayName")}
 
 
+def _visibility(role: str | None, group: str | None) -> dict | None:
+    if role and group:
+        raise AtlassianError("Use either visibility_role or visibility_group, not both")
+    if role:
+        return {"type": "role", "value": role}
+    if group:
+        return {"type": "group", "value": group}
+    return None
+
+
 class JiraService:
     def __init__(self, client: RestClient, projects: tuple[str, ...]) -> None:
         self.client = client
@@ -212,13 +222,10 @@ class JiraService:
     ) -> dict:
         if not body.strip():
             raise AtlassianError("Comment body is empty")
-        if visibility_role and visibility_group:
-            raise AtlassianError("Use either visibility_role or visibility_group, not both")
         payload: dict[str, Any] = {"body": body}
-        if visibility_role:
-            payload["visibility"] = {"type": "role", "value": visibility_role}
-        if visibility_group:
-            payload["visibility"] = {"type": "group", "value": visibility_group}
+        visibility = _visibility(visibility_role, visibility_group)
+        if visibility:
+            payload["visibility"] = visibility
         key = await self._writable_key(key)
         created = await self.client.send_json("POST", f"/rest/api/2/issue/{key}/comment", payload)
         return {"key": key, "comment": self._comment(created or {})}

@@ -17,6 +17,7 @@ from .jira_agile import JiraSprints
 from .jira_create import JiraCreator
 from .jira_edit import JiraEditor
 from .jira_links import JiraLinks
+from .jira_worklog import JiraWorklogs
 
 READ = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=True)
@@ -48,6 +49,10 @@ def _instructions(config: Config) -> str:
             "Before editing an issue check jira_get_edit_fields, before linking "
             "jira_list_link_types, and before moving to a sprint jira_list_sprints."
         )
+        lines.append(
+            "Log work only when the user asks for it, with the time and day they gave. Check "
+            "jira_get_worklogs first so that the same work is not logged twice."
+        )
     return "\n".join(lines)
 
 
@@ -69,6 +74,7 @@ def build_server(config: Config, *, transport: httpx.AsyncBaseTransport | None =
             _register_jira_edit(server, JiraEditor(jira))
             _register_jira_sprints(server, JiraSprints(jira))
             _register_jira_links(server, JiraLinks(jira))
+            _register_jira_worklog(server, JiraWorklogs(jira))
     if config.confluence:
         client = RestClient(
             "Confluence",
@@ -235,6 +241,59 @@ def _register_jira_links(server: FastMCP, links: JiraLinks) -> None:
         To change the type of a link, delete it and create a new one.
         """
         return await links.delete_link(issue_key, link_id)
+
+
+def _register_jira_worklog(server: FastMCP, worklogs: JiraWorklogs) -> None:
+    @server.tool(annotations=READ)
+    async def jira_get_worklogs(issue_key: str, limit: int = 50, start: int = 0) -> dict:
+        """Get time logged on an issue (worklog entries), oldest first."""
+        return await worklogs.get_worklogs(issue_key, limit, start)
+
+    @server.tool(annotations=WRITE)
+    async def jira_add_worklog(
+        issue_key: str,
+        time_spent: str,
+        comment: str | None = None,
+        started: str | None = None,
+        remaining_estimate: str = "auto",
+        visibility_role: str | None = None,
+        visibility_group: str | None = None,
+    ) -> dict:
+        """Log work on an issue as the account this server is logged in as.
+
+        time_spent needs units, e.g. "1h 30m", "45m", "2d". started is the day
+        ("2026-01-31") or the moment ("2026-01-31T09:00") the work began, default now.
+        remaining_estimate: "auto" (Jira reduces it), "leave" (unchanged) or a new
+        value such as "3h". If the request fails without an answer from Jira, check
+        jira_get_worklogs before trying again.
+        """
+        return await worklogs.add_worklog(
+            issue_key,
+            time_spent,
+            comment,
+            started,
+            remaining_estimate,
+            visibility_role,
+            visibility_group,
+        )
+
+    @server.tool(annotations=CHANGE)
+    async def jira_update_worklog(
+        issue_key: str,
+        worklog_id: str,
+        time_spent: str | None = None,
+        comment: str | None = None,
+        started: str | None = None,
+        remaining_estimate: str = "auto",
+    ) -> dict:
+        """Edit your own worklog entry. Get worklog_id from jira_get_worklogs.
+
+        Only the values you give are changed; formats are the same as in jira_add_worklog.
+        Entries of other users cannot be edited, and nothing can be deleted.
+        """
+        return await worklogs.update_worklog(
+            issue_key, worklog_id, time_spent, comment, started, remaining_estimate
+        )
 
 
 def _register_confluence_write(server: FastMCP, confluence: ConfluenceService) -> None:

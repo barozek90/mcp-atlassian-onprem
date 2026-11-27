@@ -37,6 +37,9 @@ WRITE_TOOLS = {
     "jira_list_link_types",
     "jira_link_issues",
     "jira_delete_link",
+    "jira_get_worklogs",
+    "jira_add_worklog",
+    "jira_update_worklog",
     "confluence_create_page",
     "confluence_update_page",
 }

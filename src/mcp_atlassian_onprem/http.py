@@ -78,6 +78,10 @@ JIRA_WRITE_RULES = (
     Rule("GET", r"/rest/api/2/issueLinkType"),
     Rule("POST", r"/rest/api/2/issueLink"),
     Rule("DELETE", rf"/rest/api/2/issueLink/{_ID}"),
+    # Time tracking. Entries can be added and edited, never deleted.
+    Rule("GET", rf"/rest/api/2/issue/{_ISSUE}/worklog(/{_ID})?"),
+    Rule("POST", rf"/rest/api/2/issue/{_ISSUE}/worklog"),
+    Rule("PUT", rf"/rest/api/2/issue/{_ISSUE}/worklog/{_ID}"),
 )
 
 CONFLUENCE_READ_RULES = (
@@ -176,8 +180,14 @@ class RestClient:
     async def get_json(self, path: str, params: dict[str, Any] | None = None) -> Any:
         return self._json(await self._send("GET", path, params=params))
 
-    async def send_json(self, method: str, path: str, body: dict[str, Any]) -> Any:
-        response = await self._send(method, path, json=body)
+    async def send_json(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any],
+        params: dict[str, Any] | None = None,
+    ) -> Any:
+        response = await self._send(method, path, json=body, params=params)
         return self._json(response) if response.content else None
 
     async def delete(self, path: str) -> None:
