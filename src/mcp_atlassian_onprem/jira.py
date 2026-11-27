@@ -19,6 +19,7 @@ _DETAIL_FIELDS = (
 )
 
 MAX_RESULTS = 100
+_MAX_PAGES = 20
 
 
 def _name(value: dict | None) -> str | None:
@@ -66,6 +67,21 @@ class JiraService:
     async def _writable_key(self, key: str) -> str:
         """Return the current key of an issue after confirming it is in scope."""
         return (await self._fetch(key))["key"]
+
+    async def _pages(self, path: str, params: dict[str, Any] | None = None) -> list[dict]:
+        """Collect all values of a paginated resource."""
+        values: list[dict] = []
+        for _ in range(_MAX_PAGES):
+            data = await self.client.get_json(
+                path, {**(params or {}), "startAt": len(values), "maxResults": 50}
+            )
+            page = data.get("values") or []
+            values += page
+            last = data.get("last", data.get("isLast"))
+            total = data.get("total")
+            if not page or last or (total is not None and len(values) >= total):
+                return values
+        raise AtlassianError(f"Jira returned too many pages for {path}")
 
     # --- reading -------------------------------------------------------------
 
@@ -123,7 +139,7 @@ class JiraService:
                 related = self._related(link.get(f"{direction}Issue"))
                 if related:
                     relation = (link.get("type") or {}).get(direction)
-                    links.append({"relation": relation, **related})
+                    links.append({"id": link.get("id"), "relation": relation, **related})
         return {
             **self._summary(issue),
             "description": fields.get("description"),

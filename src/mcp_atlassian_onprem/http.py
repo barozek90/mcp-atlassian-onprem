@@ -66,6 +66,18 @@ JIRA_WRITE_RULES = (
     Rule("GET", rf"/rest/api/2/issue/createmeta/{_PROJECT}/issuetypes(/{_ID})?"),
     Rule("GET", r"/rest/api/2/issue/createmeta"),
     Rule("POST", r"/rest/api/2/issue"),
+    # Editing fields. Which fields may be set is checked in jira_edit.py.
+    Rule("GET", rf"/rest/api/2/issue/{_ISSUE}/editmeta"),
+    Rule("PUT", rf"/rest/api/2/issue/{_ISSUE}"),
+    # Sprints: moving issues only, no creating, changing or deleting sprints or boards.
+    Rule("GET", r"/rest/agile/1.0/board"),
+    Rule("GET", rf"/rest/agile/1.0/board/{_ID}/sprint"),
+    Rule("POST", rf"/rest/agile/1.0/sprint/{_ID}/issue"),
+    Rule("POST", r"/rest/agile/1.0/backlog/issue"),
+    # Issue links. Deleting a link is the only DELETE the server can send.
+    Rule("GET", r"/rest/api/2/issueLinkType"),
+    Rule("POST", r"/rest/api/2/issueLink"),
+    Rule("DELETE", rf"/rest/api/2/issueLink/{_ID}"),
 )
 
 CONFLUENCE_READ_RULES = (
@@ -167,6 +179,9 @@ class RestClient:
     async def send_json(self, method: str, path: str, body: dict[str, Any]) -> Any:
         response = await self._send(method, path, json=body)
         return self._json(response) if response.content else None
+
+    async def delete(self, path: str) -> None:
+        await self._send("DELETE", path)
 
     async def download(self, path: str, max_bytes: int) -> bytes:
         self._check("GET", path)

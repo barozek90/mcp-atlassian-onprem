@@ -90,6 +90,22 @@ z Jiry za każdym razem:
 Walidatory workflow i wtyczki mogą wymagać więcej, niż Jira zgłasza w metadanych.
 Wychodzi to dopiero w `jira_errors`.
 
+## Edycja zgłoszeń, sprinty i linki
+
+Wszystko poniżej wymaga `--jira-rw`.
+
+- **Pola**: `jira_get_edit_fields` pokazuje, co można zmienić, a `jira_update_issue` to
+  zapisuje, np. `fields={"priority": {"name": "High"}}`. Podana wartość zastępuje obecną
+  (także całe listy, np. `labels`), `null` czyści pole. Nie da się zmienić zgłaszającego,
+  projektu, typu, nadrzędnego zgłoszenia ani poziomu bezpieczeństwa.
+- **Przypisanie**: `jira_assign_issue`.
+- **Sprinty**: `jira_list_sprints` pokazuje aktywne i przyszłe sprinty z tablic scrum
+  dozwolonych projektów. `jira_add_to_sprint` przyjmuje tylko ID z tej listy,
+  `jira_move_to_backlog` wyjmuje zgłoszenie ze sprintu.
+- **Linki**: `jira_link_issues(issue_key="OPS-1", relation="blocks", target_key="OPS-2")`
+  czyta się "OPS-1 blocks OPS-2". Dostępne relacje zwraca `jira_list_link_types`. Aby zmienić
+  typ linku, usuń go (`jira_delete_link`, ID z `jira_get_issue`) i utwórz nowy.
+
 ## Narzędzia
 
 | Narzędzie | Tryb | Opis |
@@ -106,6 +122,14 @@ Wychodzi to dopiero w `jira_errors`.
 | `jira_find_assignable_users` | rw | Kogo można przypisać |
 | `jira_assign_issue` | rw | Przypisanie lub odpięcie osoby |
 | `jira_assign_to_me` | rw | Przypisanie do konta serwera |
+| `jira_get_edit_fields` | rw | Pola, które można zmienić w zgłoszeniu |
+| `jira_update_issue` | rw | Zmiana pól, np. priorytetu |
+| `jira_list_sprints` | rw | Aktywne i przyszłe sprinty |
+| `jira_add_to_sprint` | rw | Dodanie zgłoszenia do sprintu |
+| `jira_move_to_backlog` | rw | Przeniesienie zgłoszenia do backlogu |
+| `jira_list_link_types` | rw | Typy linków |
+| `jira_link_issues` | rw | Połączenie dwóch zgłoszeń |
+| `jira_delete_link` | rw | Usunięcie linku |
 | `confluence_search` | ro | Wyszukiwanie tekstem lub CQL |
 | `confluence_get_page` | ro | Artykuł jako Markdown |
 | `confluence_get_children` | ro | Podstrony |
@@ -122,13 +146,19 @@ reszta strony i jej makra zostają bez zmian.
 ## Zabezpieczenia
 
 1. **Biała lista HTTP** (`http.py`): każde żądanie musi pasować do jawnej reguły
-   (metoda + ścieżka). W trybie `ro` są to wyłącznie `GET`. Tryb `rw` dodaje tylko sześć
-   operacji zapisu:
-   - Jira: utworzenie zgłoszenia, komentarz, zmiana statusu, przypisanie,
+   (metoda + ścieżka). W trybie `ro` są to wyłącznie `GET`. Tryb `rw` dodaje tylko te
+   operacje zapisu:
+   - Jira: utworzenie zgłoszenia, komentarz, zmiana statusu, przypisanie, edycja pól,
+     przeniesienie do sprintu lub backlogu, utworzenie i usunięcie linku,
    - Confluence: utworzenie i edycja treści.
 
-   Niedostępne są: usuwanie, edycja pól istniejących zgłoszeń, projekty i przestrzenie,
-   uprawnienia i restrykcje, użytkownicy, grupy, tokeny, hasła i ustawienia konta.
+   Jedyne dozwolone usuwanie to link między zgłoszeniami. Niedostępne są: usuwanie
+   zgłoszeń i treści, zarządzanie sprintami, tablicami, typami linków, projektami
+   i przestrzeniami, uprawnienia i restrykcje, użytkownicy, grupy, tokeny, hasła
+   i ustawienia konta.
+
+   To, których pól nie wolno edytować, sprawdza kod narzędzia (`jira_edit.py`), a nie biała
+   lista. Tak samo zakres sprintów i linków (`jira_agile.py`, `jira_links.py`).
 2. **Narzędzia zapisu nie są rejestrowane** dla usługi w trybie `ro`.
 3. **Zakres**: zapytania JQL/CQL są opakowywane warunkiem na projekt lub przestrzeń,
    a wyniki dodatkowo filtrowane po tym, co faktycznie zwrócił serwer. Zgłoszenie
@@ -145,6 +175,8 @@ reszta strony i jej makra zostają bez zmian.
 - Treść zgłoszeń, stron i załączników piszą inni ludzie i może zawierać próby
   *prompt injection*. W trybie `rw` zatwierdzaj operacje zapisu ręcznie.
 - Zmiana statusu uruchamia to, co jest skonfigurowane w workflow (np. post-functions).
+- Tablica scrum może obejmować kilka projektów, więc jej sprinty bywają wspólne także
+  z projektami spoza zakresu.
 - Zapisywana treść strony nie jest filtrowana. Makra (np. include z innej przestrzeni
   albo HTML, jeśli włączył je administrator) zadziałają przy wyświetlaniu.
 - Tekst zgłoszeń i stron z dozwolonego zakresu może cytować informacje z innych projektów.

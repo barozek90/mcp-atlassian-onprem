@@ -20,7 +20,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--jira-rw",
         action="store_true",
-        help="enable Jira issue creation and ticket operations (comments, status, ...)",
+        help="enable Jira issue creation and ticket operations (fields, sprints, links, ...)",
     )
     parser.add_argument(
         "--confluence-rw",
