@@ -12,7 +12,6 @@ _RESERVED = {"project", "issuetype"}
 # Listed by createmeta, but not settable through "fields".
 _UNSUPPORTED = {"attachment", "issuelinks"}
 _MAX_ALLOWED_VALUES = 200
-_MAX_PAGES = 20
 
 
 def _empty(value: Any) -> bool:
@@ -94,18 +93,6 @@ class JiraCreator:
 
     # --- metadata ------------------------------------------------------------
 
-    async def _pages(self, path: str) -> list[dict]:
-        values: list[dict] = []
-        for _ in range(_MAX_PAGES):
-            data = await self.client.get_json(path, {"startAt": len(values), "maxResults": 50})
-            page = data.get("values") or []
-            values += page
-            last = data.get("last", data.get("isLast"))
-            total = data.get("total")
-            if not page or last or (total is not None and len(values) >= total):
-                return values
-        raise AtlassianError("Jira returned too many pages of create metadata")
-
     async def _legacy_types(self, project: str) -> list[dict]:
         data = await self.client.get_json(
             "/rest/api/2/issue/createmeta",
@@ -118,7 +105,7 @@ class JiraCreator:
 
     async def _issue_types(self, project: str) -> list[dict]:
         try:
-            types = await self._pages(f"/rest/api/2/issue/createmeta/{project}/issuetypes")
+            types = await self.jira._pages(f"/rest/api/2/issue/createmeta/{project}/issuetypes")
         except AtlassianError as exc:
             if exc.status != 404:
                 raise
@@ -145,7 +132,7 @@ class JiraCreator:
         if "fields" in issue_type and isinstance(issue_type["fields"], dict):
             raw = [{**meta, "fieldId": key} for key, meta in issue_type["fields"].items()]
         else:
-            raw = await self._pages(
+            raw = await self.jira._pages(
                 f"/rest/api/2/issue/createmeta/{project}/issuetypes/{issue_type['id']}"
             )
         if not raw:

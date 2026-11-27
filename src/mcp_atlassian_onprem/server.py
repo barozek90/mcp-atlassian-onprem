@@ -13,7 +13,10 @@ from .config import Config
 from .confluence import ConfluenceService
 from .http import RestClient, confluence_rules, jira_rules
 from .jira import JiraService
+from .jira_agile import JiraSprints
 from .jira_create import JiraCreator
+from .jira_edit import JiraEditor
+from .jira_links import JiraLinks
 
 READ = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=True)
@@ -41,6 +44,10 @@ def _instructions(config: Config) -> str:
             "an issue call jira_get_create_fields, and ask the user for values you do not "
             "know instead of inventing them."
         )
+        lines.append(
+            "Before editing an issue check jira_get_edit_fields, before linking "
+            "jira_list_link_types, and before moving to a sprint jira_list_sprints."
+        )
     return "\n".join(lines)
 
 
@@ -59,6 +66,9 @@ def build_server(config: Config, *, transport: httpx.AsyncBaseTransport | None =
         if config.jira.read_write:
             _register_jira_write(server, jira, config.max_attachment_bytes)
             _register_jira_create(server, JiraCreator(jira))
+            _register_jira_edit(server, JiraEditor(jira))
+            _register_jira_sprints(server, JiraSprints(jira))
+            _register_jira_links(server, JiraLinks(jira))
     if config.confluence:
         client = RestClient(
             "Confluence",
@@ -164,6 +174,67 @@ def _register_jira_create(server: FastMCP, creator: JiraCreator) -> None:
         Jira rejects a value, nothing is created and the response says what is needed.
         """
         return await creator.create_issue(project_key, issue_type, fields)
+
+
+def _register_jira_edit(server: FastMCP, editor: JiraEditor) -> None:
+    @server.tool(annotations=READ)
+    async def jira_get_edit_fields(issue_key: str) -> dict:
+        """Show which fields of an issue can be edited.
+
+        Returns field ids, allowed values and the JSON shape each field expects.
+        """
+        return await editor.get_edit_fields(issue_key)
+
+    @server.tool(annotations=CHANGE)
+    async def jira_update_issue(issue_key: str, fields: dict[str, Any]) -> dict:
+        """Change fields of an issue, e.g. {"priority": {"name": "High"}}.
+
+        Each given value REPLACES the current one (also whole lists such as labels);
+        null clears a field. The reporter cannot be changed. Use jira_assign_issue for
+        the assignee, and the sprint and link tools for sprints and links.
+        """
+        return await editor.update_issue(issue_key, fields)
+
+
+def _register_jira_sprints(server: FastMCP, sprints: JiraSprints) -> None:
+    @server.tool(annotations=READ)
+    async def jira_list_sprints() -> dict:
+        """List active and future sprints of the allowed projects, with their ids."""
+        return await sprints.list_sprints()
+
+    @server.tool(annotations=CHANGE)
+    async def jira_add_to_sprint(issue_key: str, sprint_id: int) -> dict:
+        """Move an issue into an active or future sprint from jira_list_sprints."""
+        return await sprints.add_to_sprint(issue_key, sprint_id)
+
+    @server.tool(annotations=CHANGE)
+    async def jira_move_to_backlog(issue_key: str) -> dict:
+        """Remove an issue from its active and future sprints."""
+        return await sprints.move_to_backlog(issue_key)
+
+
+def _register_jira_links(server: FastMCP, links: JiraLinks) -> None:
+    @server.tool(annotations=READ)
+    async def jira_list_link_types() -> dict:
+        """List the issue link types and how each direction reads."""
+        return await links.list_link_types()
+
+    @server.tool(annotations=WRITE)
+    async def jira_link_issues(issue_key: str, relation: str, target_key: str) -> dict:
+        """Link two issues so that it reads "issue_key relation target_key".
+
+        relation is an inward or outward description from jira_list_link_types, e.g.
+        "blocks" or "is blocked by".
+        """
+        return await links.link_issues(issue_key, relation, target_key)
+
+    @server.tool(annotations=CHANGE)
+    async def jira_delete_link(issue_key: str, link_id: str) -> dict:
+        """Delete a link of an issue. Get link_id from the links in jira_get_issue.
+
+        To change the type of a link, delete it and create a new one.
+        """
+        return await links.delete_link(issue_key, link_id)
 
 
 def _register_confluence_write(server: FastMCP, confluence: ConfluenceService) -> None:

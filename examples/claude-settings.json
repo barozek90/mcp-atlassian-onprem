@@ -8,6 +8,9 @@
       "mcp__atlassian__jira_list_transitions",
       "mcp__atlassian__jira_find_assignable_users",
       "mcp__atlassian__jira_get_create_fields",
+      "mcp__atlassian__jira_get_edit_fields",
+      "mcp__atlassian__jira_list_sprints",
+      "mcp__atlassian__jira_list_link_types",
       "mcp__atlassian__confluence_search",
       "mcp__atlassian__confluence_get_page",
       "mcp__atlassian__confluence_get_children",
@@ -20,6 +23,11 @@
       "mcp__atlassian__jira_transition_issue",
       "mcp__atlassian__jira_assign_issue",
       "mcp__atlassian__jira_assign_to_me",
+      "mcp__atlassian__jira_update_issue",
+      "mcp__atlassian__jira_add_to_sprint",
+      "mcp__atlassian__jira_move_to_backlog",
+      "mcp__atlassian__jira_link_issues",
+      "mcp__atlassian__jira_delete_link",
       "mcp__atlassian__confluence_create_page",
       "mcp__atlassian__confluence_update_page"
     ]
