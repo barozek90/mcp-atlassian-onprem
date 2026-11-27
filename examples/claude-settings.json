@@ -11,6 +11,7 @@
       "mcp__atlassian__jira_get_edit_fields",
       "mcp__atlassian__jira_list_sprints",
       "mcp__atlassian__jira_list_link_types",
+      "mcp__atlassian__jira_get_worklogs",
       "mcp__atlassian__confluence_search",
       "mcp__atlassian__confluence_get_page",
       "mcp__atlassian__confluence_get_children",
@@ -28,6 +29,8 @@
       "mcp__atlassian__jira_move_to_backlog",
       "mcp__atlassian__jira_link_issues",
       "mcp__atlassian__jira_delete_link",
+      "mcp__atlassian__jira_add_worklog",
+      "mcp__atlassian__jira_update_worklog",
       "mcp__atlassian__confluence_create_page",
       "mcp__atlassian__confluence_update_page"
     ]

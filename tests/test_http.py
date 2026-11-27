@@ -29,6 +29,10 @@ WRITE_REQUESTS = [
     ("GET", "/rest/api/2/issueLinkType"),
     ("POST", "/rest/api/2/issueLink"),
     ("DELETE", "/rest/api/2/issueLink/12"),
+    ("GET", "/rest/api/2/issue/OPS-1/worklog"),
+    ("GET", "/rest/api/2/issue/OPS-1/worklog/5"),
+    ("POST", "/rest/api/2/issue/OPS-1/worklog"),
+    ("PUT", "/rest/api/2/issue/OPS-1/worklog/5"),
 ]
 
 ADMIN_REQUESTS = [
@@ -51,6 +55,9 @@ ADMIN_REQUESTS = [
     ("DELETE", "/rest/agile/1.0/sprint/9"),
     ("POST", "/rest/agile/1.0/board"),
     ("DELETE", "/rest/agile/1.0/board/4"),
+    ("DELETE", "/rest/api/2/issue/OPS-1/worklog/5"),
+    ("PUT", "/rest/api/2/issue/OPS-1/worklog"),
+    ("POST", "/rest/api/2/issue/OPS-1/worklog/5"),
     ("POST", "/rest/api/2/issue/bulk"),
     ("GET", "/secure/admin/ViewApplicationProperties.jspa"),
 ]

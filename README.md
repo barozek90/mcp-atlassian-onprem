@@ -106,6 +106,25 @@ Wszystko poniżej wymaga `--jira-rw`.
   czyta się "OPS-1 blocks OPS-2". Dostępne relacje zwraca `jira_list_link_types`. Aby zmienić
   typ linku, usuń go (`jira_delete_link`, ID z `jira_get_issue`) i utwórz nowy.
 
+## Dekretowanie czasu
+
+W trybie `--jira-rw` czas pracy zapisuje się przez natywny worklog Jiry, zawsze jako konto,
+którym loguje się serwer.
+
+- Przykład: `jira_add_worklog(issue_key="OPS-1", time_spent="1h 30m", started="2026-01-31")`.
+- `time_spent` wymaga jednostek (`w`, `d`, `h`, `m`). Ile godzin ma dzień i tydzień, ustala
+  konfiguracja Jiry.
+- `started` to data (zapisywana jako godzina 12:00) lub data z godziną, np.
+  `2026-01-31T09:00`. Bez strefy czasowej liczy się strefa komputera, na którym działa
+  serwer. Pominięte oznacza "teraz".
+- `remaining_estimate`: `auto` (domyślnie, Jira sama koryguje pozostały czas), `leave` (bez
+  zmian) lub nowa wartość, np. `3h`.
+- `jira_update_worklog` poprawia tylko **własne** wpisy i zmienia tylko podane wartości.
+  Usuwać wpisów nie można: błędny trzeba skasować w Jirze.
+
+Wtyczki do rozliczania czasu (np. Tempo) mogą wymagać dodatkowych atrybutów. Serwer ich nie
+ustawia.
+
 ## Narzędzia
 
 | Narzędzie | Tryb | Opis |
@@ -130,6 +149,9 @@ Wszystko poniżej wymaga `--jira-rw`.
 | `jira_list_link_types` | rw | Typy linków |
 | `jira_link_issues` | rw | Połączenie dwóch zgłoszeń |
 | `jira_delete_link` | rw | Usunięcie linku |
+| `jira_get_worklogs` | rw | Zadekretowany czas w zgłoszeniu |
+| `jira_add_worklog` | rw | Zadekretowanie czasu |
+| `jira_update_worklog` | rw | Poprawienie własnego wpisu czasu |
 | `confluence_search` | ro | Wyszukiwanie tekstem lub CQL |
 | `confluence_get_page` | ro | Artykuł jako Markdown |
 | `confluence_get_children` | ro | Podstrony |
@@ -149,16 +171,18 @@ reszta strony i jej makra zostają bez zmian.
    (metoda + ścieżka). W trybie `ro` są to wyłącznie `GET`. Tryb `rw` dodaje tylko te
    operacje zapisu:
    - Jira: utworzenie zgłoszenia, komentarz, zmiana statusu, przypisanie, edycja pól,
-     przeniesienie do sprintu lub backlogu, utworzenie i usunięcie linku,
+     przeniesienie do sprintu lub backlogu, utworzenie i usunięcie linku, dodanie i edycja
+     wpisu czasu pracy (przy okazji może się zmienić pozostały szacowany czas),
    - Confluence: utworzenie i edycja treści.
 
    Jedyne dozwolone usuwanie to link między zgłoszeniami. Niedostępne są: usuwanie
-   zgłoszeń i treści, zarządzanie sprintami, tablicami, typami linków, projektami
-   i przestrzeniami, uprawnienia i restrykcje, użytkownicy, grupy, tokeny, hasła
+   zgłoszeń, wpisów czasu pracy i treści, zarządzanie sprintami, tablicami, typami linków,
+   projektami i przestrzeniami, uprawnienia i restrykcje, użytkownicy, grupy, tokeny, hasła
    i ustawienia konta.
 
    To, których pól nie wolno edytować, sprawdza kod narzędzia (`jira_edit.py`), a nie biała
-   lista. Tak samo zakres sprintów i linków (`jira_agile.py`, `jira_links.py`).
+   lista. Tak samo zakres sprintów i linków (`jira_agile.py`, `jira_links.py`) oraz to, że
+   edytować można tylko własne wpisy czasu (`jira_worklog.py`).
 2. **Narzędzia zapisu nie są rejestrowane** dla usługi w trybie `ro`.
 3. **Zakres**: zapytania JQL/CQL są opakowywane warunkiem na projekt lub przestrzeń,
    a wyniki dodatkowo filtrowane po tym, co faktycznie zwrócił serwer. Zgłoszenie
